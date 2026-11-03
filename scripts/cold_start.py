@@ -30,7 +30,7 @@ def main():
     ap.add_argument("--functions", nargs="+", required=True)
     ap.add_argument("--trials", type=int, default=10)
     ap.add_argument("--warm", type=int, default=5, help="warm requests after each cold one")
-    ap.add_argument("--region", default=os.environ.get("AWS_REGION", "us-east-1"))
+    ap.add_argument("--region", default=os.environ.get("AWS_REGION"), help="defaults to your aws configure region")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 

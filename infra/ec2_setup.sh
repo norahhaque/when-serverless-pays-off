@@ -6,7 +6,7 @@
 #   REGION=us-east-1 ACCOUNT=123456789012 bash ec2_setup.sh
 set -euo pipefail
 
-REGION=${REGION:-us-east-1}
+REGION=${REGION:-$(aws configure get region || echo us-east-1)}
 : "${ACCOUNT:?set ACCOUNT to your AWS account id}"
 IMAGE=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/resnet-serving:latest
 

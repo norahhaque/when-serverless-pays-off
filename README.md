@@ -28,7 +28,8 @@ load. From that we find the request rate where containers become cheaper (the cr
 ## Quick start (local, no AWS)
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+# Python 3.9–3.12. On macOS use /usr/bin/python3 (Homebrew's 3.15 breaks pip/locust).
+/usr/bin/python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 docker build -t resnet-serving:local .
 
 # EC2-style server on :8080

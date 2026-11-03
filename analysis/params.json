@@ -1,5 +1,5 @@
 {
-  "_note": "Prices: us-east-1 on-demand, x86. VERIFY against aws.amazon.com/lambda/pricing and /ec2/pricing before quoting. Fields marked assumed_ are placeholders; replace them with calibration measurements.",
+  "_note": "Prices: us-east-2 (Ohio) on-demand, x86 (same as us-east-1 for these). VERIFY against aws.amazon.com/lambda/pricing and /ec2/pricing before quoting. Fields marked assumed_ are placeholders; replace them with calibration measurements.",
   "lambda_price_per_request": 2.0e-7,
   "lambda_price_per_gb_s": 1.66667e-5,
   "ec2_instance": "c6i.large",

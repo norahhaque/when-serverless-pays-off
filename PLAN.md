@@ -17,6 +17,21 @@
 | Norah | Inference service + image, Lambda deploy, cold starts, EC2 deploy, cost model |
 | Aymah | Locust workloads, capacity tests, hybrid router, analysis + charts |
 
+## Progress to midterm
+
+| # | Step | Status |
+|---|---|---|
+| 1 | GitHub repo (public) | Done |
+| 2a | AWS CLI installed, logged in (us-east-2) | Done |
+| 2b | Budget: $25/mo, alerts at 50%, 100%, forecast 100% (credits excluded) | Done |
+| 2c | Lambda concurrency increase 10 → 1000 requested | In progress (waiting on AWS) |
+| 3 | Deploy Lambda (1024/2048/3008 MB) | Not started |
+| 4 | Cold vs. warm latency per memory size | Not started |
+| 5 | EC2 capacity curve; choose SLO | Not started |
+| 6 | Cost model with measured inputs | Not started |
+| 7 | (Stretch) short steady sweep on both backends | Not started |
+| 8 | Slides uploaded (by Wed 11:15 AM if presenting Thu) | Not started |
+
 ## Milestones
 
 - [x] Inference service, one image for both targets, verified locally

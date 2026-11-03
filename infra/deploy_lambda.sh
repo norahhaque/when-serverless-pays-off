@@ -7,7 +7,7 @@
 # Needs: aws CLI configured (aws configure), Docker running.
 set -euo pipefail
 
-REGION=${REGION:-us-east-1}
+REGION=${REGION:-$(aws configure get region || echo us-east-1)}
 REPO=${REPO:-resnet-serving}
 ROLE=${ROLE:-resnet-lambda-role}
 MEMS=${MEMS:-"1024 2048 3008"}
