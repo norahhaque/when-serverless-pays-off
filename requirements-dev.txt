@@ -1,0 +1,10 @@
+# Local tooling (load generation, measurement, analysis, router). The model itself runs in Docker.
+locust>=2.24
+requests
+boto3
+pandas
+matplotlib
+numpy
+fastapi
+uvicorn
+httpx

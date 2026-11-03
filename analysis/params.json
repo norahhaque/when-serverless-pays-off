@@ -1,0 +1,13 @@
+{
+  "_note": "Prices: us-east-1 on-demand, x86. VERIFY against aws.amazon.com/lambda/pricing and /ec2/pricing before quoting. Fields marked assumed_ are placeholders; replace them with calibration measurements.",
+  "lambda_price_per_request": 2.0e-7,
+  "lambda_price_per_gb_s": 1.66667e-5,
+  "ec2_instance": "c6i.large",
+  "ec2_price_per_hour": 0.085,
+
+  "assumed_lambda_billed_ms": {"1024": 220, "2048": 120, "3008": 95},
+  "assumed_lambda_init_s": 4.0,
+  "assumed_ec2_capacity_rps": 15,
+
+  "burst": {"base_rps": 5, "mult": 5, "period_s": 600, "burst_s": 120}
+}
