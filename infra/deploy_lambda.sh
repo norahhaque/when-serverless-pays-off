@@ -39,14 +39,15 @@ for MEM in $MEMS; do
     aws lambda update-function-code --function-name "$FN" --image-uri "$IMAGE" --region "$REGION" >/dev/null
   else
     aws lambda create-function --function-name "$FN" --package-type Image --code ImageUri="$IMAGE" \
-      --role "$ROLE_ARN" --memory-size "$MEM" --timeout 60 --architectures x86_64 --region "$REGION" >/dev/null
+      --role "$ROLE_ARN" --memory-size "$MEM" --timeout 120 --architectures x86_64 --region "$REGION" >/dev/null
     aws lambda wait function-active-v2 --function-name "$FN" --region "$REGION"
     aws lambda create-function-url-config --function-name "$FN" --auth-type NONE --region "$REGION" >/dev/null
     aws lambda add-permission --function-name "$FN" --statement-id public-url \
       --action lambda:InvokeFunctionUrl --principal "*" --function-url-auth-type NONE --region "$REGION" >/dev/null
-    # If the URL returns 403 Forbidden, your account may also need lambda:InvokeFunction
-    # granted for URL calls; see the "Function URL" permissions page in the Lambda docs.
   fi
+  # Since Oct 2025 public URLs also need InvokeFunction, restricted to calls made through the URL.
+  aws lambda add-permission --function-name "$FN" --statement-id public-url-invoke \
+    --action lambda:InvokeFunction --principal "*" --invoked-via-function-url --region "$REGION" >/dev/null 2>&1 || true
   echo "$FN -> $(aws lambda get-function-url-config --function-name "$FN" --region "$REGION" --query FunctionUrl --output text)"
 done
 

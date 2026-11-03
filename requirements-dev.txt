@@ -1,7 +1,7 @@
 # Local tooling (load generation, measurement, analysis, router). The model itself runs in Docker.
 locust>=2.24
 requests
-boto3
+boto3[crt]  # crt is needed for `aws login` credentials
 pandas
 matplotlib
 numpy

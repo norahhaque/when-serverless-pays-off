@@ -4,7 +4,7 @@
   python analysis/cost_model.py --params my.json
 
 Writes three figures to results/figures/ and prints the crossover table.
-Swap the assumed_* inputs for measured values as calibration results come in.
+Inputs and where each came from (measured vs. placeholder) are in params.json "_sources".
 """
 import argparse
 import json
@@ -25,17 +25,17 @@ INK, INK2, GRID = "#0b0b0b", "#52514e", "#e6e5e0"
 # ---------- cost functions ----------
 
 def lambda_cost_per_req(p, mem_mb):
-    billed_s = p["assumed_lambda_billed_ms"][str(mem_mb)] / 1000
+    billed_s = p["lambda_billed_ms"][str(mem_mb)] / 1000
     return p["lambda_price_per_request"] + (mem_mb / 1024) * billed_s * p["lambda_price_per_gb_s"]
 
 
 def lambda_init_cost(p, mem_mb):
     """Container-image Lambdas are billed for the INIT phase of each cold start."""
-    return (mem_mb / 1024) * p["assumed_lambda_init_s"] * p["lambda_price_per_gb_s"]
+    return (mem_mb / 1024) * p["lambda_init_s"] * p["lambda_price_per_gb_s"]
 
 
 def ec2_cost_per_1k_steady(p, rps):
-    n = math.ceil(rps / p["assumed_ec2_capacity_rps"])
+    n = math.ceil(rps / p["ec2_capacity_rps"])
     return n * p["ec2_price_per_hour"] / (rps * 3600) * 1000
 
 
@@ -51,11 +51,11 @@ def hybrid_cost_per_1k(p, mem_mb, n, base=None):
     """N always-on containers; whatever exceeds N x capacity goes to Lambda."""
     b = p["burst"]
     base, peak, quiet_s, reqs = burst_profile(b, base)
-    cap = n * p["assumed_ec2_capacity_rps"]
+    cap = n * p["ec2_capacity_rps"]
     over_quiet = max(0.0, base - cap) * quiet_s
     over_peak = max(0.0, peak - cap) * b["burst_s"]
     # Extra Lambda environments needed at the burst start (Little's law), assumed cold each cycle.
-    lat_s = p["assumed_lambda_billed_ms"][str(mem_mb)] / 1000
+    lat_s = p["lambda_billed_ms"][str(mem_mb)] / 1000
     new_envs = math.ceil(max(0.0, peak - max(cap, base)) * lat_s)
     cycle = (n * p["ec2_price_per_hour"] * b["period_s"] / 3600
              + (over_quiet + over_peak) * lambda_cost_per_req(p, mem_mb)
@@ -105,7 +105,7 @@ def fig_steady(p, mems):
 
 def breakeven_utilization(p, mem_mb):
     """EC2 beats Lambda only if avg load / provisioned capacity exceeds this fraction."""
-    ec2_full = p["ec2_price_per_hour"] / (p["assumed_ec2_capacity_rps"] * 3600)
+    ec2_full = p["ec2_price_per_hour"] / (p["ec2_capacity_rps"] * 3600)
     return ec2_full / lambda_cost_per_req(p, mem_mb)
 
 
@@ -121,7 +121,7 @@ def fig_burst_shift(p, mem_mb):
         for base in np.linspace(0.1, 60, 1200):
             _, peak, _, reqs = burst_profile(b, base)
             avg = reqs / b["period_s"]
-            n = math.ceil(peak / p["assumed_ec2_capacity_rps"])
+            n = math.ceil(peak / p["ec2_capacity_rps"])
             if n * p["ec2_price_per_hour"] / (avg * 3600) * 1000 < lam:
                 found = avg
                 break
@@ -151,7 +151,7 @@ def fig_burst_shift(p, mem_mb):
 def fig_hybrid(p, mem_mb):
     b = p["burst"]
     base, peak, _, reqs = burst_profile(b)
-    n_peak = math.ceil(peak / p["assumed_ec2_capacity_rps"])
+    n_peak = math.ceil(peak / p["ec2_capacity_rps"])
     ns = list(range(0, n_peak + 1))
     costs = [hybrid_cost_per_1k(p, mem_mb, n) for n in ns]
     fig, ax = plt.subplots(figsize=(7, 4))
@@ -176,7 +176,7 @@ def main():
     args = ap.parse_args()
     p = json.load(open(args.params))
     os.makedirs(FIG_DIR, exist_ok=True)
-    mems = [int(m) for m in p["assumed_lambda_billed_ms"]]
+    mems = [int(m) for m in p["lambda_billed_ms"]]
 
     print("Lambda $/1k requests and steady-traffic crossover vs. EC2:")
     rates = np.round(np.arange(0.1, 200, 0.1), 1)

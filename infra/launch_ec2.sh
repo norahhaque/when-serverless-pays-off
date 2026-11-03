@@ -11,8 +11,8 @@ cd "$(dirname "$0")/.."
 
 REGION=${REGION:-$(aws configure get region || echo us-east-1)}
 SERVERS=${SERVERS:-1}
-TYPE=${TYPE:-c6i.large}
-LOADGEN_TYPE=${LOADGEN_TYPE:-c6i.large}
+TYPE=${TYPE:-c7i-flex.large}
+LOADGEN_TYPE=${LOADGEN_TYPE:-c7i-flex.large}
 REPO_URL=${REPO_URL:-https://github.com/norahhaque/when-serverless-pays-off}
 ROLE=resnet-ec2-role
 SG_NAME=resnet-sg
@@ -50,9 +50,9 @@ SERVER_DATA=$(mktemp); LOADGEN_DATA=$(mktemp)
 { echo '#!/bin/bash'; echo "export REGION=$REGION ACCOUNT=$ACCOUNT"; cat infra/ec2_setup.sh; } > "$SERVER_DATA"
 cat > "$LOADGEN_DATA" <<EOF
 #!/bin/bash
-dnf install -y git python3-pip
+dnf install -y git python3.11 python3.11-pip
 git clone $REPO_URL /opt/repo
-python3 -m pip install -r /opt/repo/requirements-dev.txt
+python3.11 -m pip install locust requests  # AL2023's python3.9 has no gevent wheel
 touch /opt/loadgen-ready
 EOF
 

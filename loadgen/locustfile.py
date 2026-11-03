@@ -1,7 +1,10 @@
 """Steady and bursty load for any backend (EC2, Lambda Function URL, or the router).
 
 Each simulated user sends ~1 request/s, so user count == target request rate.
-This is closed-loop: if responses take longer than 1 s, the real rate drops below
+Request start times are Poisson (exponential gaps), so the merged stream is Poisson too.
+Without that, users spawned together fire in lock-step and every second becomes one
+burst of N simultaneous requests (we measured this: p50 grew as exactly 45 ms x rate).
+This is closed-loop: if responses take longer than the gap, the real rate drops below
 the target. Always report the *achieved* rate from Locust's CSV, not the target.
 
 Examples:
@@ -13,8 +16,10 @@ Examples:
 """
 import base64
 import os
+import random
+import time
 
-from locust import HttpUser, LoadTestShape, constant_throughput, task
+from locust import HttpUser, LoadTestShape, task
 
 MODE = os.environ.get("MODE", "steady")           # steady | burst
 RATE = float(os.environ.get("RATE", 5))            # base requests/s
@@ -31,7 +36,14 @@ IMAGE_B64 = base64.b64encode(
 
 
 class InferenceUser(HttpUser):
-    wait_time = constant_throughput(1)
+    def on_start(self):
+        self._next = time.monotonic() + random.expovariate(1.0)
+        time.sleep(max(0.0, self._next - time.monotonic()))  # gevent-patched: yields
+
+    def wait_time(self):
+        # Exponential gap between request *starts* (not after the response): ~1 req/s per user.
+        self._next = max(self._next + random.expovariate(1.0), time.monotonic())
+        return self._next - time.monotonic()
 
     @task
     def predict(self):

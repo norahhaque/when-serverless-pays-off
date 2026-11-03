@@ -1,13 +1,18 @@
 {
-  "_note": "Prices: us-east-2 (Ohio) on-demand, x86 (same as us-east-1 for these). VERIFY against aws.amazon.com/lambda/pricing and /ec2/pricing before quoting. Fields marked assumed_ are placeholders; replace them with calibration measurements.",
+  "_note": "Prices: us-east-2 on-demand, x86. VERIFY on aws.amazon.com/lambda/pricing and /ec2/pricing before quoting.",
+  "_sources": {
+    "lambda_billed_ms": "MEASURED 2026-11-03: warm Billed Duration from CloudWatch REPORT lines",
+    "lambda_init_s": "MEASURED 2026-11-03: median billed Init Duration over 10 forced cold starts per size (results/raw/cold_start.csv)",
+    "ec2_capacity_rps": "PLACEHOLDER until 3-rep capacity sweep finishes"
+  },
   "lambda_price_per_request": 2.0e-7,
   "lambda_price_per_gb_s": 1.66667e-5,
-  "ec2_instance": "c6i.large",
-  "ec2_price_per_hour": 0.085,
+  "ec2_instance": "c7i-flex.large",
+  "ec2_price_per_hour": 0.08479,
 
-  "assumed_lambda_billed_ms": {"1024": 220, "2048": 120, "3008": 95},
-  "assumed_lambda_init_s": 4.0,
-  "assumed_ec2_capacity_rps": 15,
+  "lambda_billed_ms": {"1024": 190, "2048": 90, "3008": 58},
+  "lambda_init_s": 4.0,
+  "ec2_capacity_rps": 15,
 
   "burst": {"base_rps": 5, "mult": 5, "period_s": 600, "burst_s": 120}
 }

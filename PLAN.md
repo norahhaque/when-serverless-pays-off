@@ -25,9 +25,9 @@
 | 2a | AWS CLI installed, logged in (us-east-2) | Done |
 | 2b | Budget: $25/mo, alerts at 50%, 100%, forecast 100% (credits excluded) | Done |
 | 2c | Lambda concurrency increase 10 → 1000 requested | In progress (waiting on AWS) |
-| 3 | Deploy Lambda (1024/2048/3008 MB) | Not started |
-| 4 | Cold vs. warm latency per memory size | Not started |
-| 5 | EC2 capacity curve; choose SLO | Not started |
+| 3 | Deploy Lambda (1024/2048/3008 MB) | Done |
+| 4 | Cold vs. warm latency per memory size | Done |
+| 5 | EC2 capacity curve; choose SLO | In progress |
 | 6 | Cost model with measured inputs | Not started |
 | 7 | (Stretch) short steady sweep on both backends | Not started |
 | 8 | Slides uploaded (by Wed 11:15 AM if presenting Thu) | Not started |
@@ -38,8 +38,8 @@
 - [x] Load generator (steady/burst), probe, cold-start script
 - [x] Analytical cost model + figures (assumed inputs)
 - [x] Router prototype
-- [ ] Lambda deployed at 1024/2048/3008 MB; concurrency limit checked
-- [ ] Cold vs. warm latency per memory size (10 trials each)
+- [x] Lambda deployed at 1024/2048/3008 MB; concurrency limit checked
+- [x] Cold vs. warm latency per memory size (10 trials each)
 - [ ] EC2 single-instance capacity curve; pick SLO and per-container cap
 - [ ] Re-run cost model with measured inputs  **← midterm**
 - [ ] Steady sweep, both backends, 3 reps

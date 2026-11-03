@@ -36,6 +36,10 @@ def cold(path):
             ax.annotate(f"{y:,.0f}", (xi, y), xytext=(0, 3), textcoords="offset points",
                         ha="center", va="bottom", color=INK, fontsize=9)
     ax.set_yscale("log")
+    ticks = [100, 200, 500, 1000, 2000, 5000, 10000]
+    ax.set_yticks(ticks)
+    ax.set_yticklabels([f"{t:,}" for t in ticks])
+    ax.minorticks_off()
     ax.set_xticks(x)
     ax.set_xticklabels([f"{m} MB" for m in mems])
     style(ax, "Lambda latency: cold vs. warm (median, whisker = p90)",
@@ -53,30 +57,42 @@ def cold(path):
 
 
 def capacity(paths, slo):
+    """Files named <prefix>_r<target>_stats.csv; several prefixes (reps) are averaged."""
     rows = []
     for p in paths:
         s = pd.read_csv(p)
         agg = s[s["Name"] == "Aggregated"].iloc[0]
-        rows.append({"rps": agg["Requests/s"], "p50": agg["50%"], "p99": agg["99%"],
-                     "fail_pct": 100 * agg["Failure Count"] / max(1, agg["Request Count"]),
-                     "file": os.path.basename(p)})
-    df = pd.DataFrame(rows).sort_values("rps")
+        base = os.path.basename(p)
+        rows.append({"rep": base.split("_r")[0], "target": int(base.split("_r")[1].split("_")[0]),
+                     "rps": agg["Requests/s"], "p50": agg["50%"], "p99": agg["99%"],
+                     "fail_pct": 100 * agg["Failure Count"] / max(1, agg["Request Count"])})
+    raw = pd.DataFrame(rows)
+    df = raw.groupby("target").agg(rps=("rps", "mean"), p50=("p50", "mean"), p99=("p99", "mean"),
+                                   p99_min=("p99", "min"), p99_max=("p99", "max"),
+                                   fail_pct=("fail_pct", "max"), reps=("rep", "count")).reset_index()
 
     fig, ax = plt.subplots(figsize=(7, 4))
+    if df["reps"].max() > 1:
+        ax.fill_between(df["rps"], df["p99_min"], df["p99_max"], color=C[1], alpha=0.15, lw=0,
+                        label="p99 range across runs")
     for i, col in enumerate(["p50", "p99"]):
-        ax.plot(df["rps"], df[col], color=C[i], lw=2, marker="o", ms=8, mec="white", mew=2, label=col)
+        ax.plot(df["rps"], df[col], color=C[i], lw=2, marker="o", ms=8, mec="white", mew=2,
+                label=f"{col} (mean of {df['reps'].max()} runs)")
     ax.axhline(slo, color=INK2, lw=1, ls="--")
-    ax.annotate(f"SLO {slo} ms", (df["rps"].min(), slo), xytext=(0, 4), textcoords="offset points",
+    ax.annotate(f"SLO {slo:g} ms", (df["rps"].min(), slo), xytext=(0, 4), textcoords="offset points",
                 color=INK2, fontsize=9)
-    ok = df[df["p99"] <= slo]
+    # Capacity = highest rate before the mean p99 first crosses the SLO.
+    over = df.index[df["p99"] > slo]
+    ok = df.loc[: over[0] - 1] if len(over) else df
     if len(ok):
         cap = ok["rps"].max()
         ax.axvline(cap, color=INK2, lw=1, ls=":")
-        ax.annotate(f"capacity ~ {cap:.1f} req/s", (cap, ax.get_ylim()[1] * 0.9), xytext=(4, 0),
+        ax.annotate(f"capacity ~ {cap:.1f} req/s", (cap, slo * 1.6), xytext=(4, 0),
                     textcoords="offset points", color=INK, fontsize=9)
-    style(ax, "One EC2 instance: latency vs. load", "Achieved request rate (req/s)", "Latency (ms)")
+    style(ax, "One EC2 instance (c7i-flex.large): latency vs. load",
+          "Achieved request rate (req/s)", "Latency (ms)")
     ax.set_ylim(bottom=0)
-    ax.legend(frameon=False, loc="upper left")
+    ax.legend(frameon=False, loc="upper left", fontsize=9)
     fig.tight_layout()
     out = os.path.join(FIG_DIR, "ec2_capacity.png")
     fig.savefig(out, dpi=200)
