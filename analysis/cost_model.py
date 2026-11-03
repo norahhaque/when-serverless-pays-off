@@ -94,10 +94,12 @@ def fig_steady(p, mems):
         ax.plot(rates, [y] * len(rates), color=C[i], lw=2, label=f"Lambda {m} MB")
     ec2 = [ec2_cost_per_1k_steady(p, r) for r in rates]
     ax.plot(rates, ec2, color=C[3], lw=2, label=f"EC2 {p['ec2_instance']} (always-on)")
-    ax.set_yscale("log")
     ax.set_xlim(0, 50)
-    style(ax, "Steady traffic: cost per 1,000 requests",
-          "Request rate (req/s)", "$ per 1,000 requests (log)")
+    ax.set_ylim(0, 0.008)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"${v:.3f}"))
+    style(ax, f"Steady traffic: cost per 1,000 requests "
+              f"(EC2 capacity {p['ec2_capacity_rps']:g} req/s at SLO)",
+          "Request rate (req/s)", "$ per 1,000 requests")
     ax.legend(frameon=False, loc="upper right", fontsize=9)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "steady_crossover.png"), dpi=200)
@@ -148,31 +150,38 @@ def fig_burst_shift(p, mem_mb):
     return dict(zip(mults, xs))
 
 
-def fig_hybrid(p, mem_mb):
+def fig_hybrid(p, mem_mb, bases=(5, 10, 20)):
+    """Hybrid cost relative to Lambda-only, vs. N, for several base rates (same burst shape)."""
     b = p["burst"]
-    base, peak, _, reqs = burst_profile(b)
-    n_peak = math.ceil(peak / p["ec2_capacity_rps"])
-    ns = list(range(0, n_peak + 1))
-    costs = [hybrid_cost_per_1k(p, mem_mb, n) for n in ns]
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar(ns, costs, color=C[0], width=0.6)
-    ax.set_xticks(ns)
-    ax.set_xticklabels(["0\n(Lambda only)"] + [str(n) for n in ns[1:-1]] + [f"{n_peak}\n(peak-sized)"])
-    best = int(np.argmin(costs))
-    ax.annotate(f"cheapest: N={ns[best]}, ${costs[best]:.4f}", (ns[best], costs[best]),
-                xytext=(0, 8), textcoords="offset points", ha="center", color=INK, fontsize=9)
-    style(ax, f"Hybrid cost vs. number of always-on containers N\n"
-              f"(base {base:g} req/s, {b['mult']:g}x burst for {b['burst_s']}s every {b['period_s']}s)",
-          "Always-on containers N", "$ per 1,000 requests")
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    out = {}
+    for i, base in enumerate(bases):
+        _, peak, _, _ = burst_profile(b, base)
+        ns = list(range(0, math.ceil(peak / p["ec2_capacity_rps"]) + 1))
+        costs = [hybrid_cost_per_1k(p, mem_mb, n, base) for n in ns]
+        rel = [100 * c / costs[0] for c in costs]
+        best = int(np.argmin(rel))
+        note = f"best N={ns[best]}, {rel[best]:.0f}%" if best else "best: Lambda only"
+        ax.plot(ns, rel, color=C[i], lw=2, marker="o", ms=8, mec="white", mew=2,
+                label=f"base {base:g} req/s, peak {peak:g}: {note}")
+        out[base] = dict(zip(ns, [round(float(c), 5) for c in costs]))
+    ax.axhline(100, color=INK2, lw=1, ls="--")
+    ax.annotate("Lambda only", (0, 100), xytext=(4, 4), textcoords="offset points", color=INK2, fontsize=9)
+    style(ax, f"Hybrid cost vs. always-on containers N (Lambda {mem_mb} MB overflow)\n"
+              f"{b['mult']:g}x burst for {b['burst_s']}s every {b['period_s']}s; "
+              f"container capacity {p['ec2_capacity_rps']:g} req/s at SLO",
+          "Always-on containers N (rightmost point = sized for peak)", "Cost vs. Lambda only (%)")
+    ax.set_ylim(top=ax.get_ylim()[1] + 25)  # headroom for the legend
+    ax.legend(frameon=False, loc="upper left", fontsize=9)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "hybrid_vs_n.png"), dpi=200)
-    return dict(zip(ns, costs))
+    return out
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--params", default=os.path.join(HERE, "params.json"))
-    ap.add_argument("--mem", type=int, default=2048, help="Lambda memory for burst/hybrid figures")
+    ap.add_argument("--mem", type=int, default=3008, help="Lambda memory for burst/hybrid figures")
     args = ap.parse_args()
     p = json.load(open(args.params))
     os.makedirs(FIG_DIR, exist_ok=True)
@@ -187,7 +196,8 @@ def main():
     print(f"Break-even EC2 utilization vs. Lambda {args.mem} MB: {breakeven_utilization(p, args.mem):.0%}")
     print("Burst multiplier -> crossover avg rate (None = never):",
           {k: (round(v, 1) if v else None) for k, v in fig_burst_shift(p, args.mem).items()})
-    print("Hybrid N -> $/1k:", {k: round(float(v), 5) for k, v in fig_hybrid(p, args.mem).items()})
+    for base, costs in fig_hybrid(p, args.mem).items():
+        print(f"Hybrid, base {base} req/s: N -> $/1k {costs}")
     print(f"Figures written to {os.path.abspath(FIG_DIR)}")
 
 

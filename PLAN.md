@@ -27,10 +27,10 @@
 | 2c | Lambda concurrency increase 10 → 1000 requested | In progress (waiting on AWS) |
 | 3 | Deploy Lambda (1024/2048/3008 MB) | Done |
 | 4 | Cold vs. warm latency per memory size | Done |
-| 5 | EC2 capacity curve; choose SLO | In progress |
-| 6 | Cost model with measured inputs | Not started |
-| 7 | (Stretch) short steady sweep on both backends | Not started |
-| 8 | Slides uploaded (by Wed 11:15 AM if presenting Thu) | Not started |
+| 5 | EC2 capacity curve; choose SLO (p99 ≤ 500 ms) | Done: default 7.8, tuned 15.3 req/s (3 reps each) |
+| 6 | Cost model with measured inputs | Done |
+| 7 | Steady sweep on both backends (in-region) + 2 burst tests | Done (3 reps each; EC2 terminated) |
+| 8 | Slides | Done: Slot12_WhenServerlessPaysOff.pptx/.pdf (outside repo) |
 
 ## Milestones
 
@@ -40,8 +40,8 @@
 - [x] Router prototype
 - [x] Lambda deployed at 1024/2048/3008 MB; concurrency limit checked
 - [x] Cold vs. warm latency per memory size (10 trials each)
-- [ ] EC2 single-instance capacity curve; pick SLO and per-container cap
-- [ ] Re-run cost model with measured inputs  **← midterm**
+- [x] EC2 single-instance capacity curve; pick SLO and per-container cap
+- [x] Re-run cost model with measured inputs  **← midterm**
 - [ ] Steady sweep, both backends, 3 reps
 - [ ] Burst sweep, both backends, 3 reps
 - [ ] Hybrid sweep over N; validate against the model

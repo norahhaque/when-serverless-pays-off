@@ -19,7 +19,7 @@ import os
 import random
 import time
 
-from locust import HttpUser, LoadTestShape, task
+from locust import HttpUser, LoadTestShape, events, task
 
 MODE = os.environ.get("MODE", "steady")           # steady | burst
 RATE = float(os.environ.get("RATE", 5))            # base requests/s
@@ -28,11 +28,25 @@ PERIOD = float(os.environ.get("PERIOD", 600))      # seconds between burst start
 BURST_LEN = float(os.environ.get("BURST_LEN", 120))
 DURATION = float(os.environ.get("DURATION", 300))
 TARGET_PATH = os.environ.get("TARGET_PATH", "/predict")  # "/" for Lambda Function URLs
+REQUEST_LOG = os.environ.get("REQUEST_LOG")  # optional per-request CSV: t,ms,ok
 
 _here = os.path.dirname(__file__)
 IMAGE_B64 = base64.b64encode(
     open(os.environ.get("IMAGE", os.path.join(_here, "..", "data", "sample.jpg")), "rb").read()
 ).decode()
+
+
+if REQUEST_LOG:
+    _log = open(REQUEST_LOG, "w")
+    _log.write("t,ms,ok\n")
+
+    @events.request.add_listener
+    def _log_request(response_time, exception, **kwargs):
+        _log.write(f"{time.time():.3f},{response_time:.1f},{0 if exception else 1}\n")
+
+    @events.quitting.add_listener
+    def _close_log(**kwargs):
+        _log.close()
 
 
 class InferenceUser(HttpUser):
